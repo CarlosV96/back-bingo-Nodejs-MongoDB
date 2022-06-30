@@ -1,12 +1,11 @@
 const express = require("express");
 const path = require("path");
-const cookieParser = require("cookie-parser");
+const mongoose = require("mongoose");
+
 const cors = require('cors')
 const app = express();
 
-const bcrypt = require("bcrypt");
-const mongoose = require("mongoose");
-const User = require("./models/user");
+const User = require("../bingo/models/user");
 
 app.use(cors());
 app.use(express.json());
@@ -16,13 +15,11 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const mongo_uri = "mongodb://localhost/usersBingo";
 
-mongoose.connect(mongo_uri, function (err) {
-  if (err) {
-    throw err;
-  } else {
-    console.log("conectado a mongo {mongo_uri}");
-  }
-});
+mongoose
+    .connect(mongo_uri, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then(() => console.log("MongoDB connected"))
+    .catch((err) => console.log(err));
+
 
 const indexRouter = require("./routes/index");
 const usersRouter = require("./routes/users");
@@ -30,7 +27,15 @@ const usersRouter = require("./routes/users");
 app.use("/", indexRouter);
 app.use("/signup", usersRouter);
 
-app.post("/register", (req, res) => {
+app.get("/get", cors(), (req, res) => {
+  const data = User.find();
+  data
+      .then((result) => res.json(result))
+      .catch((err) => console.log(err));
+});
+
+
+app.post("/register", cors(), (req, res) => {
   const { username, password } = req.body;
 
   const user = new User({ username, password });
@@ -67,40 +72,3 @@ app.post("/authenticate", cors(), (req, res) => {
 });
 
 module.exports = app;
-
-/* --- 
-variables, constantes y entradas
-que se supone no voy 
-a usar
-*/
-var createError = require("http-errors");
-const logger = require("morgan");
-//const { resourceLimits } = require("worker_threads");
-
-// view engine setup
-app.set("views", path.join(__dirname, "views"));
-app.set("view engine", "hbs");
-
-app.use(logger("dev"));
-
-app.use(cookieParser());
-
-// error handler
-app.use(function (err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get("env") === "development" ? err : {};
-
-  // render the error page
-  res.status(err.status || 500);
-  res.render("error");
-});
-
-// catch 404 and forward to error handler
-app.use(function (req, res, next) {
-  next(createError(404));
-});
-
-//const usersRouter = require('./routes/users');
-//const { default: mongoose } = require('mongoose');
-//app.use('/users', usersRouter);
